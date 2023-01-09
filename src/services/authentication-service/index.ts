@@ -20,6 +20,30 @@ async function signIn(params: SignInParams): Promise<SignInResult> {
     token,
   };
 }
+async function gitSignin(email: string): Promise<SignInGitResult> {
+  const user = await userRepository.findByEmail(email, { id: true, email: true, password: true });
+
+  if (!user) {
+    const gitUser = await userRepository.create({ email });
+    const token = await createSession(gitUser.id);
+
+    return {
+      user: {
+        id: gitUser.id,
+        email: gitUser.email,
+      },
+      token,
+    };
+  }
+  const token = await createSession(user.id);
+  return {
+    user: {
+      id: user.id,
+      email: user.email,
+    },
+    token,
+  };
+}
 
 async function getUserOrFail(email: string): Promise<GetUserOrFailResult> {
   const user = await userRepository.findByEmail(email, { id: true, email: true, password: true });
@@ -50,10 +74,19 @@ type SignInResult = {
   token: string;
 };
 
+type SignInGitResult = {
+  user: {
+    id: number;
+    email: string;
+  };
+  token: string;
+};
+
 type GetUserOrFailResult = Pick<User, "id" | "email" | "password">;
 
 const authenticationService = {
   signIn,
+  gitSignin,
 };
 
 export default authenticationService;
